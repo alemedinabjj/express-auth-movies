@@ -13,10 +13,19 @@ model Filme {
   diretor  String
   ano      Int
   favorito Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+  userId Int 
+
+  @@map("filmes")
 }
 
 model User {
   id    Int    @id @default(autoincrement())
   email String @unique
   senha String
+
+  filmes Filme[]
+
+  @@map("users")
 }

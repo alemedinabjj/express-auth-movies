@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
 import { Request, Response, Router } from 'express';
+import prisma from '../prisma/db';
+import { verifyToken } from '../middlewares/verifyToken';
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-const prisma = new PrismaClient();
 const router = Router();
 
 router.post('/register', async (req: Request, res: Response) => {
@@ -55,28 +55,8 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-interface CustomRequest extends Request {
-  userId?: number;
-}
 
-function verifyToken(req: CustomRequest, res: Response, next: any) {
-  const token = req.headers.authorization?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ error: 'Token não encontrado.' });
-  }
-
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = payload.id;
-    next();
-  } catch (error) {
-    console.error(error);
-    return res.status(401).json({ error: 'Token inválido.' });
-  }
-}
-
-router.post('/', verifyToken, async (req: CustomRequest, res: Response) => {
+router.post('/', verifyToken, async (req: Request, res: Response) => {
   const user = await prisma.user.findUnique({
     where: {
       id: req.userId,

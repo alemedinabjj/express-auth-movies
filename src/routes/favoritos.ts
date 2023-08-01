@@ -1,38 +1,60 @@
 import { Request, Response, Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../prisma/db';
+import { verifyToken } from '../middlewares/verifyToken';
 
-const prisma = new PrismaClient();
 const router = Router();
 
-router.post('/', async (req: Request, res: Response) => {
+interface FilmeCreateInput {
+  titulo: string;
+  diretor: string;
+  ano: number;
+  favorito: boolean;
+  userId: number;
+}
+
+router.post('/', verifyToken, async (req: Request, res: Response) => {
   const { titulo, diretor, ano } = req.body;
+  const userId = req.userId as number;
+
   try {
+
+    const filmeData: FilmeCreateInput = {
+      titulo,
+      diretor,
+      ano,
+      favorito: true,
+      userId,
+    };
+
     const filme = await prisma.filme.create({
-      data: {
-        titulo,
-        diretor,
-        ano,
-        favorito: true,
-      },
+      data: filmeData,
     });
     res.json(filme);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao adicionar filme aos favoritos.' });
   }
+  catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao salvar filme.' });
+  }
+
 });
 
-router.get('/', async (req: Request, res: Response) => {
+
+router.get('/', verifyToken, async (req: Request, res: Response) => {
+  const userId = req.userId as number;
+
   try {
     const filmes = await prisma.filme.findMany({
       where: {
-        favorito: true,
+        // @ts-ignore
+        userId: userId
       },
     });
+
     res.json(filmes);
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Erro ao obter lista de filmes favoritos.' });
+    res.status(500).json({ error: 'Erro ao buscar filmes.' });
   }
 });
 
